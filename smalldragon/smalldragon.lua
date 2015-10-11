@@ -15,19 +15,19 @@ local nHLVMTimerId = 0; -- for quit hlvm function
 local nBMSTimerId = 0;
 local nQuickTransferTimerId = 0; -- for quick transfer
 
-local test = {
-    [1] = {
-        ["1"] = "mot",
-        ["2"] = "hai",
-		["3"] = {18,1,116,1}
-    },
-    [2] = {
-        ["3"] = "ba",
-        ["4"] = "bon"
-    }
+local tbSellItems = {
+	[1] = {22,1,112,1},
+	[2] = {22,1,112,2},
+	[3] = {22,1,112,3},
+	[4] = {22,1,113,1},
+	[5] = {22,1,113,2},
+	[6] = {22,1,113,3},
+	[7] = {22,1,114,1},
+	[8] = {22,1,114,2},
+	[9] = {22,1,114,3}
 };
-local nTmp = 0;
 -----------------end variable decleration-------------------------------------------------------------------
+
 
 function tbSmall:Reload()
     local function fnDoScript(szFilePath, szFileName)
@@ -99,32 +99,111 @@ function tbSmall:OnSay(szChannelName, szName, szMsg, szGateway)
 			end
 		elseif (szMsg == "stopvhc") then 
 			Map.AutoVHC:Stop();
+		elseif (szMsg == "selldragonsoul") then 
+			tbSmall:SellDragonSoul();
 		elseif (szMsg == "autobigdesert") then 
 			--Map.AutoBigDesert:Start();
 		elseif (szMsg == "stopbigdesert") then 
 			--Map.AutoBigDesert:Stop();
+		elseif (szMsg == "gooutbms") then 			
+			tbSmall:GoOutBms();	
+		elseif (szMsg == "bmstransport") then 			
+			tbSmall:BmsTransport()
 		elseif (szMsg == "test1") then 			
 			Map.SMUltity:PrintCurrentWorldPos();	
 		elseif (szMsg == "test2") then
+			tbSmall:test1();
 		elseif (szMsg == "test3") then
-			me.Msg(""..test[1]["2"]);
+			local tbFind = me.FindItemInBags(unpack({18,1,1016,1}));
+			for _, tbItem in pairs(tbFind) do 
+				me.UseItem(tbItem.pItem);
+				return;
+			end
+		elseif (szMsg == "test4") then
+			local n = me.GetItemCountInBags(18,1,1016,1);
+			if n > 0 then 
+				me.Msg(KItem.GetNameById(18,1,1016,1));
+			end
 		end
     end
 end
 
 --*** test
+local t1timerid = 0;
+local arg = "argument";
+function tbSmall:test1()
+	if t1timerid == 0 then 
+		t1timerid = Ui.tbLogic.tbTimer:Register(Env.GAME_FPS,arg,tbSmall.test1_ontimer);
+	else
+		Ui.tbLogic.tbTimer:Close(t1timerid);
+		t1timerid = 0;
+	end
+end
+function tbSmall:test1_ontimer(arg)
+	SendChannelMsg("Team",""..arg..t1timerid.." "..GetLocalDate("%H:%M:%S"));
+end
+
 function tbSmall:Test()
-	local x = 1621;
-			local y = 3947;
-			local x1,y1 = Map.SMUltity:GetCurrentWorldPos();
-			if Map.SMUltity:_IsArrived(x1,y1,x,y) == 1 then 
-				me.Msg("ok");
-			else
-				me.Msg("not arrived.");
+	local tbNpcs = KNpc.GetAroundNpcList(me, 500);
+	for _, npc in pairs(tbNpcs) do 
+		if string.find(npc.szName,"Lộ Lộ Thông") then
+			AutoAi.SetTargetIndex(npc.nIndex);
+			if UiManager:WindowVisible(Ui.UI_SAYPANEL) == 1 then 
+				local ques, tbAnswers = UiCallback:GetQuestionAndAnswer();
+				for i, tbInfo in ipairs(tbAnswers) do
+					me.Msg(tbInfo);
+					if string.find(tbInfo, "Đăng Kỳ Mê Trận") then
+						me.AnswerQestion(i-1);
+					end
+				end	
 			end
+		end
+	end
 end
 --- end test
-
+-- go out bms / transer bms
+function tbSmall:GoOutBms()
+	me.StartAutoPath(213*8, 194*16);
+end
+function tbSmall:BmsTransport()
+	local tbNpcs = KNpc.GetAroundNpcList(me, 500);
+	for _, npc in pairs(tbNpcs) do 
+		if string.find(npc.szName,"Lộ Lộ Thông") then
+			AutoAi.SetTargetIndex(npc.nIndex);
+			if UiManager:WindowVisible(Ui.UI_SAYPANEL) == 1 then 
+				local ques, tbAnswers = UiCallback:GetQuestionAndAnswer();
+				for i, tbInfo in ipairs(tbAnswers) do
+					me.Msg(tbInfo);
+					if string.find(tbInfo, "Thiên Tuyệt Phong") then
+						me.AnswerQestion(i-1);
+					end
+				end	
+			end
+		end
+	end
+end
+-- sell long hồn giám
+function tbSmall:SellDragonSoul()
+	local nId = me.CallServerScript({"ApplyKinSalaryOpenShop", 241}); 
+	if nId then
+		if (UiManager:WindowVisible(SALA_SILVERSHOP) ~= 1) then
+			if (UiManager:WindowVisible(Ui.UI_SAYPANEL) ~= 1) then
+				AutoAi.SetTargetIndex(nId)				
+			for i,tbFitem in pairs(tbSellItems) do
+				local tbFind = me.FindItemInBags(unpack(tbFitem));
+				for j, tbItem in pairs(tbFind) do
+					local num = me.GetItemCountInBags(tbFitem[1],tbFitem[2],tbFitem[3],tbFitem[4]);
+						me.ShopSellItem(tbItem.pItem, num);
+						SendChannelMsg("Nearby","<color=yellow>Đã bán: "..num.." "..KItem.GetNameById(tbItem[1],tbItem[2],tbItem[3],tbItem[4]));
+					end
+				end
+		    end	 
+	    end
+		if (UiManager:WindowVisible(Ui.UI_SAYPANEL) ~= 1) then
+			UiManager:CloseWindow(Ui.UI_SAYPANEL);
+		end
+    end
+end
 -- *** nhặt trường sinh thảo
 function tbSmall:PickTST()
 	local tbAroundNpc = KNpc.GetAroundNpcList(me, 30);
@@ -271,7 +350,6 @@ end
 function tbSmall:ReturnCity()
     me.SendClientCmdRevive(0);
 end
-
 function tbSmall:RideHorse()
     if me.GetNpc().IsRideHorse() == 0 then
         Switch("horse");

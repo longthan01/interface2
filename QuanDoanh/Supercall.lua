@@ -20,7 +20,6 @@ function tbSuperCall:ModifyUi()
 		end
 		Ui.tbLogic.tbTimer:Register(1, fnOnSay);
 	end
-
 end
 
 function tbSuperCall:OnSay(szChannelName, szName, szMsg, szGateway)

@@ -4,7 +4,7 @@ local AutoVHC	   = Map.AutoVHC or {};
 Map.AutoVHC		   = AutoVHC;
 local SMUltity = Map.SMUltity;
 --
-local nVHC_CURRENT_STEP = 2; 
+local nVHC_CURRENT_STEP = 11; 
 local IsStartedAutoVHC = 0;
 local nMAPID = 29; -- lâm an
 local nAutoVHCTimerId = 0;
@@ -17,7 +17,7 @@ local STEP_2_POS = {1596,3178};
 local STEP_3_POS = {1596,3178};
 local STEP_4_POS = {1658,3068};
 local STEP_5_POS = {1680,3142};
-local STEP_6_POS = {1680,3142};
+local STEP_6_POS = {1678,3142};
 local STEP_7_POS = {1668,3049};
 local STEP_8_POS = {1713,3075};
 local STEP_9_POS = {1731,2954};
@@ -52,7 +52,6 @@ local KEY = {18,1,246,1};
 
 local STEP_6_TIMERID = 0;
 local STEP_6_INTERVAL = 50;
-local STEP_8_ISDONE = 0;
 
 local STEP_7_NPCPOS = {1668,3049};
 local STEP_7_ISDONE = 0;
@@ -73,7 +72,7 @@ local STEP_10_NPCPOS = {1682,2897};
 local STEP_11_NPCNAME = "1 túi vải";
 local STEP_11_NPCID = {18,1,1016,1};
 local STEP_11_TIMERID = 0;
-local STEP_11_INTERVAL = 50;
+local STEP_11_INTERVAL = 30;
 
 local STEP_12_NPCID = {18,1,1016,1};
 local STEP_12_TIMERID = 0;
@@ -118,13 +117,12 @@ function AutoVHC:Stop()
 		nAutoVHCTimerId = 0;
 		nVHC_CURRENT_STEP = 1; -- reset step
 		-- close all timer
-		Map.SMUltity:CloseTimer(STEP_3_TIMERID);
-		Map.SMUltity:CloseTimer(STEP_4_TIMERID);
-		Map.SMUltity:CloseTimer(STEP_7_TIMERID);
-		Map.SMUltity:CloseTimer(STEP_6_TIMERID);
-		Map.SMUltity:CloseTimer(STEP_7_TIMERID);
-		Map.SMUltity:CloseTimer(STEP_11_TIMERID);
-		Map.SMUltity:CloseTimer(STEP_12_TIMERID);
+		if STEP_3_TIMERID ~= 0 then Map.SMUltity:CloseTimer(STEP_3_TIMERID); end
+		if STEP_4_TIMERID ~= 0 then Map.SMUltity:CloseTimer(STEP_4_TIMERID); end
+		if STEP_6_TIMERID ~= 0 then Map.SMUltity:CloseTimer(STEP_6_TIMERID); end
+		if STEP_7_TIMERID ~= 0 then Map.SMUltity:CloseTimer(STEP_7_TIMERID); end
+		if STEP_11_TIMERID ~= 0 then Map.SMUltity:CloseTimer(STEP_11_TIMERID); end
+		if STEP_12_TIMERID ~= 0 then Map.SMUltity:CloseTimer(STEP_12_TIMERID); end
 		-- end --
 		UiManager:OpenWindow("UI_INFOBOARD", "<bclr=White><color=red>Auto vạn hoa cốc stopped.<color>");
 	end
@@ -205,7 +203,7 @@ function AutoVHC:CheckPrecondition(nStep)
 		end
 		return 1;
 	end
-	return 0;
+	return 1;
 end
 function AutoVHC:DoStep()
 	if AutoVHC:CheckPrecondition(nVHC_CURRENT_STEP) == 0 then 
@@ -467,29 +465,35 @@ function AutoVHC:_Step11_PickBag()
 		end
 	end
 end
-function AutoVHC:DoStep12()
+function AutoVHC:DoStep12() -- use wine, kill Túy tăng
+	local tbNpcs = KNpc.GetAroundNpcList(me,nNPC_FIND_RANGE);
+	for _, npc in pairs(tbNpcs) do 
+		if AutoAi.AiTargetCanAttack(npc.nIndex) == 1 then -- túy tăng here
+			Autoai.StartAutoFight();
+			AutoVHC:Stop();
+			return;
+		end
+	end
 	if STEP_12_TIMERID == 0 and STEP_12_ISDONE == 0 then 
+		AutoVHC:_Step12_UseWine(); -- cross-delay
 		AutoVHC:_Step12_UseWine(); -- cross-delay
 		STEP_12_TIMERID = Ui.tbLogic.tbTimer:Register(STEP_12_INTERVAL * Env.GAME_FPS, AutoVHC._Step12_UseWine);
 	elseif STEP_12_ISDONE == 1 then 
 		Ui.tbLogic.tbTimer:Close(STEP_12_TIMERID);
 		STEP_12_TIMERID = 0;
 		STEP_12_ISDONE = 0;
-		AutoAi:UpdateCfg(Ui.tbLogic.tbAutoFightData:ShortKey());
-		IsStartedAutoVHC = 0; -- stop
-		return;
 	end
 end
 function AutoVHC:_Step12_UseWine()
-	local tbFind = me.FindItemInBags(unpack(STEP_12_NPCID));
-	if not tbFind then 
+	local n = me.GetItemCountInBags(unpack(STEP_12_NPCID));
+	me.Msg(""..n);
+	if n == 0 then 
 		STEP_12_ISDONE = 1;
 		return;
 	end
+	local tbFind = me.FindItemInBags(unpack(STEP_12_NPCID));
 	for _, tbItem in pairs(tbFind) do 
 		me.UseItem(tbItem.pItem);
-		me.UseItem(tbItem.pItem);
-		
 		return;
 	end
 end
