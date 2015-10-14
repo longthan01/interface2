@@ -129,7 +129,7 @@ function AutoBigDesert:Stop()
 end
 function AutoBigDesert:DoStep()
 	-- if current step is processed, go to next step
-	if STEP_CONFIG[nABDCurrentStep]["ISDONE"] = 1 then 
+	if STEP_CONFIG[nABDCurrentStep]["ISDONE"] == 1 then 
 		nABDCurrentStep = nABDCurrentStep + 1;
 		-- if current step > max step mean is all step is processed, stop auto
 		if nABDCurrentStep > nABDMaxStep then  
